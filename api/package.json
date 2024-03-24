@@ -2,15 +2,15 @@
   "name": "api",
   "version": "0.0.1",
   "private": true,
-  "main": "./dist/server.js",
+  "main": "./dist/index.js",
   "type": "module",
   "files": [
     "dist/"
   ],
   "scripts": {
     "build": "yarn gen:supabase:types && tsc --declaration --outDir dist/",
-    "start": "tsx --experimental-wasm-modules -r dotenv/config src/server.ts dotenv_config_path=.env.development.local",
-    "start:dist": "yarn build && node -r dotenv/config dist/server.js",
+    "start": "tsx --experimental-wasm-modules -r dotenv/config src/index.ts dotenv_config_path=.env.development.local",
+    "start:dist": "yarn build && node -r dotenv/config dist/index.js",
     "lint": "eslint src",
     "lint:fix": "yarn lint --fix",
     "precommit": "lint-staged",

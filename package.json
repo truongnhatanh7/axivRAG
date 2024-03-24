@@ -1,8 +1,8 @@
 {
-  "name": "monorepo-template",
+  "name": "axivRAG",
   "private": true,
   "version": "1.0.0",
-  "author": "Brace Sproul",
+  "author": "truongnhatanh7",
   "license": "MIT",
   "workspaces": [
     "api",
