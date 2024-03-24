@@ -10,7 +10,7 @@ import {
   NOTE_PROMPT,
   NOTES_TOOL_SCHEMA,
   outputParser,
-} from "prompts.js";
+} from "notes/prompts.js";
 import { SupabaseDatabase } from "database.js";
 
 async function deletePages(
@@ -78,6 +78,8 @@ export async function takeNotes({
   pagesToDelete: number[];
 }) {
   console.log(name);
+  const database = await SupabaseDatabase.fromExistingIndex();
+
   if (!paperUrl.endsWith("pdf")) {
     throw new Error("not a pdf");
   }
@@ -88,7 +90,14 @@ export async function takeNotes({
   }
   const documents = await convertPdfToDocuments(pdfAsBuffer);
   const notes = await generateNotes(documents);
-  const database = await SupabaseDatabase.fromDocuments(documents);
+
+  const newDocs: Array<Document> = documents.map((doc) => ({
+    ...doc,
+    metadata: {
+      ...doc.metadata,
+      url: paperUrl,
+    },
+  }));
 
   await Promise.all([
     database.addPaper({
