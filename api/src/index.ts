@@ -3,6 +3,15 @@ import { PDFDocument } from "pdf-lib";
 import { Document } from "langchain/document";
 import { writeFile, unlink } from "fs/promises";
 import { UnstructuredLoader } from "langchain/document_loaders/fs/unstructured";
+import { formatDocumentsAsString } from "langchain/util/document";
+import { ChatOpenAI } from "langchain/chat_models/openai";
+import {
+  ArxivPaperNote,
+  NOTE_PROMPT,
+  NOTES_TOOL_SCHEMA,
+  outputParser,
+} from "prompts.js";
+import { SupabaseDatabase } from "database.js";
 
 async function deletePages(
   pdf: Buffer,
@@ -41,6 +50,24 @@ async function convertPdfToDocuments(pdf: Buffer): Promise<Array<Document>> {
   return documents;
 }
 
+async function generateNotes(
+  documents: Array<Document>
+): Promise<Array<ArxivPaperNote>> {
+  const documentsAsString = formatDocumentsAsString(documents);
+  const model = new ChatOpenAI({
+    modelName: "gpt-4-1106-preview",
+    temperature: 0.0, // creative aspect
+  });
+  const modelWithTool = model.bind({
+    tools: [NOTES_TOOL_SCHEMA],
+  });
+  const chain = NOTE_PROMPT.pipe(modelWithTool).pipe(outputParser);
+  const response = await chain.invoke({
+    paper: documentsAsString,
+  });
+  return response;
+}
+
 async function main({
   paperUrl,
   name,
@@ -50,6 +77,7 @@ async function main({
   name: string;
   pagesToDelete: number[];
 }) {
+  console.log(name);
   if (!paperUrl.endsWith("pdf")) {
     throw new Error("not a pdf");
   }
@@ -59,8 +87,22 @@ async function main({
     pdfAsBuffer = await deletePages(pdfAsBuffer, pagesToDelete);
   }
   const documents = await convertPdfToDocuments(pdfAsBuffer);
-  console.log(documents);
-  console.log("length", documents.length);
+  const notes = await generateNotes(documents);
+  const database = await SupabaseDatabase.fromDocuments(documents);
+
+  await Promise.all([
+    database.addPaper({
+      paperUrl,
+      name,
+      paper: formatDocumentsAsString(documents),
+      notes,
+    }),
+    database.vectorStore.addDocuments(documents),
+  ]);
 }
 
-main({ paperUrl: "https://arxiv.org/pdf/2305.15334.pdf", name: "test", pagesToDelete: [] });
+main({
+  paperUrl: "https://arxiv.org/pdf/2305.15334.pdf",
+  name: "test",
+  pagesToDelete: [],
+});
