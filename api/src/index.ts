@@ -68,7 +68,7 @@ async function generateNotes(
   return response;
 }
 
-async function main({
+export async function takeNotes({
   paperUrl,
   name,
   pagesToDelete,
@@ -101,8 +101,8 @@ async function main({
   ]);
 }
 
-main({
-  paperUrl: "https://arxiv.org/pdf/2305.15334.pdf",
-  name: "test",
-  pagesToDelete: [],
-});
+// main({
+//   paperUrl: "https://arxiv.org/pdf/2305.15334.pdf",
+//   name: "test",
+//   pagesToDelete: [],
+// });
